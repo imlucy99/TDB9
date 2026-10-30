@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RH7 SPEEDO</title>
+  <meta name="description" content="Custom speedometer HUD analog 4 dial (gaya DB9 generasi awal) untuk RH7" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- VBOX Performance Box Touch: klik tombol (atau tekan V) untuk memunculkan alatnya -->
+  <button class="vbox-btn" id="vbox-btn" type="button" title="VBOX Performance Box Touch (V)"><i></i><b>VBOX</b><span>PBT</span></button>
+  <div class="vbox" id="vbox"></div>
+
+  <!-- Panel tes (hanya di preview ?demo): tombol mesin & lampu. Shortcut: E = mesin, L = lampu -->
+  <div class="dev" id="dev">
+    <button type="button" id="dev-engine">Mesin: OFF</button>
+    <button type="button" id="dev-lights">Lampu: OFF</button>
+  </div>
+
+  <div class="hud-wrap">
+    <div class="cluster" id="hud">
+      <!-- Panel logam (brushed aluminium / gunmetal) di belakang 4 gauge -->
+      <div class="panel"></div>
+      <!-- Semua gauge, tick, angka, jarum & ikon digambar oleh script.js -->
+      <svg id="dial" class="dial" viewBox="0 90 1774 710" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

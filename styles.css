@@ -121,7 +121,7 @@ body.preview .hud-wrap {
 #door-lock.locked .shackle-open { display: none; }
 
 .dial .gear { font-family: var(--digital); font-weight: 800; font-size: 58px; fill: #f4f7ff; text-anchor: middle; dominant-baseline: central; }
-.dial .gear.rev { fill: var(--warn); }
+.dial .gear.rev { fill: #f4f7ff; }
 
 /* LCD trip + odometer: layar biru-hitam, teks putih; meredup saat mesin mati */
 /* mesin mati = layar gelap total (teks hilang, kaca digelapkan); mesin hidup = menyala */
@@ -145,7 +145,7 @@ body.preview .hud-wrap {
     font-family: var(--ui); font-weight: 700; fill: #f4f7ff;
     text-anchor: middle; dominant-baseline: central; letter-spacing: 1px;
 }
-.dial .lcd-m.warn { fill: #ffb21a; }
+.dial .lcd-m.warn { fill: #f4f7ff; }
 .dial .lcd-m.crit { fill: #ff4d4d; animation: lcdblink 1s step-end infinite; }
 @keyframes lcdblink { 0% { opacity: 1; } 50% { opacity: 0.15; } }
 

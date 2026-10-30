@@ -160,6 +160,15 @@ body.preview .hud-wrap {
 }
 .dial .lcd-s.end { text-anchor: end; }
 
+/* Layar pesan peringatan di tachometer */
+.dial .lcd-m {
+    font-family: var(--ui); font-weight: 700; fill: #f4f7ff;
+    text-anchor: middle; dominant-baseline: central; letter-spacing: 2px;
+}
+.dial .lcd-m.warn { fill: #ffb21a; }
+.dial .lcd-m.crit { fill: #ff4d4d; animation: lcdblink 1s step-end infinite; }
+@keyframes lcdblink { 0% { opacity: 1; } 50% { opacity: 0.15; } }
+
 /* ===================== PANEL TES (preview) ===================== */
 .dev { display: none; position: fixed; top: 8px; left: 8px; z-index: 10; gap: 6px; }
 body.preview .dev { display: flex; }

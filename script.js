@@ -117,6 +117,14 @@ const ICON_OIL = `<path fill="currentColor" stroke="none" d="M2.5 10h4.2l1.3-2h2
 
 // layar LCD (trip + total mil) di sisi kanan hub speedo
 const LCD = { x: SPD.cx + 60, y: SPD.cy - 52, w: 190, h: 112 };
+// layar pesan peringatan di tachometer (di bawah hub)
+const MSG = { x: RPM.cx - 100, y: RPM.cy + 56, w: 200, h: 82 };
+// bingkai layar LCD (dipakai kedua layar)
+const lcdFrame = (r) => `
+    <rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="8" fill="#2b2d33"/>
+    <rect x="${r.x + 3}" y="${r.y + 3}" width="${r.w - 6}" height="${r.h - 6}" rx="6" fill="url(#lcdG)"/>
+    <line x1="${r.x + 8}" y1="${r.y + 4.5}" x2="${r.x + r.w - 8}" y2="${r.y + 4.5}" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+    <path d="M${r.x + 3} ${r.y + 3}H${r.x + r.w * 0.55}L${r.x + r.w * 0.3} ${r.y + r.h - 3}H${r.x + 3}Z" fill="rgba(255,255,255,0.035)"/>`;
 
 function buildDial() {
     const sA = (v) => SPD.a0 + (v / MAX_MPH) * SPD.sweep;        // sudut speedo (mph)
@@ -220,19 +228,21 @@ function buildDial() {
     s += icon('oil-ico', 'gauge-ico', OIL.cx - 14.4, OIL.cy + 28, 1.2, ICON_OIL);
 
     // ----- gear + ikon status: di celah bawah tachometer (jarum tidak pernah lewat sini) -----
-    s += `<text id="gear" class="gear" x="${RPM.cx}" y="${RPM.cy + 116}">N</text>`;
-    const IC = 1.6, IW = 24 * IC, icoY = RPM.cy + 166;
+    s += `<g class="lcd">${lcdFrame(MSG)}
+    <text id="msg-a" class="lcd-m" x="${MSG.x + MSG.w / 2}" y="${MSG.y + 27}" font-size="30"></text>
+    <text id="msg-b" class="lcd-m" x="${MSG.x + MSG.w / 2}" y="${MSG.y + 58}" font-size="30"></text>
+    ${txt('lcd-s end', MSG.x + MSG.w - 12, MSG.y + 14, 13, '').replace('></text>', ' id="msg-n"></text>')}
+    </g>`;
+    s += `<text id="gear" class="gear" x="${RPM.cx}" y="${RPM.cy + 176}">N</text>`;
+    const IC = 1.6, IW = 24 * IC, icoY = RPM.cy + 214;
     [['engine-ico', 'eng', ICON_ENGINE], ['headlight', 'eng', ICON_HEADLIGHT],
      ['seatbelts', 'eng warn', ICON_SEATBELT], ['door-lock', '', ICON_LOCK]].forEach(([id, cls, inner], i) => {
-        s += icon(id, cls, RPM.cx + (i - 1.5) * 60 - IW / 2, icoY, IC, inner);
+        s += icon(id, cls, RPM.cx + (i - 1.5) * 56 - IW / 2, icoY, IC, inner);
     });
 
     // ----- LCD (kanan hub speedo): baris atas = TRIP, baris bawah = total MILE -----
     s += `<g class="lcd">
-    <rect x="${LCD.x}" y="${LCD.y}" width="${LCD.w}" height="${LCD.h}" rx="8" fill="#2b2d33"/>
-    <rect x="${LCD.x + 3}" y="${LCD.y + 3}" width="${LCD.w - 6}" height="${LCD.h - 6}" rx="6" fill="url(#lcdG)"/>
-    <line x1="${LCD.x + 8}" y1="${LCD.y + 4.5}" x2="${LCD.x + LCD.w - 8}" y2="${LCD.y + 4.5}" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
-    <path d="M${LCD.x + 3} ${LCD.y + 3}H${LCD.x + LCD.w * 0.55}L${LCD.x + LCD.w * 0.3} ${LCD.y + LCD.h - 3}H${LCD.x + 3}Z" fill="rgba(255,255,255,0.035)"/>
+    ${lcdFrame(LCD)}
     ${txt('lcd-s', LCD.x + 14, LCD.y + 38, 15, 'TI')}
     <text id="lcd-trip" class="lcd-v" x="${LCD.x + 42}" y="${LCD.y + 31}" font-size="40">0.0</text>
     <text id="lcd-odo" class="lcd-v" x="${LCD.x + 14}" y="${LCD.y + 82}" font-size="40">0</text>
@@ -379,6 +389,38 @@ window.setSeatbelts = function (val) {
     state.belted = on;
     setCls($('seatbelts'), on ? 'ind eng active' : 'ind eng warn');
 };
+
+// ---------- 8b. Layar pesan peringatan (tachometer): ENGINE FAULT / CHECK ENGINE, FUEL LOW, FASTEN SEATBELT ----------
+// Hanya tampil saat mesin hidup. Kalau ada beberapa peringatan, tampil bergantian (kritis duluan) dengan penanda 1/2, 2/2.
+const MSG_ROTATE_MS = 2200;
+function activeWarnings() {
+    const w = [];
+    if (!state.engine) return w;
+    if (state.health <= 0.3) w.push({ a: 'ENGINE', b: 'FAULT', c: 'crit' });
+    else if (state.health <= 0.5) w.push({ a: 'CHECK', b: 'ENGINE', c: 'warn' });
+    if (state.fuel < 0.2) w.push({ a: 'FUEL', b: 'LOW', c: 'warn' });
+    if (!state.belted) w.push({ a: 'FASTEN', b: 'SEATBELT', c: 'warn' });
+    return w;
+}
+let msgIdx = 0, msgSince = 0, msgKey = '';
+function renderMsg(m, i, n) {
+    setText($('msg-a'), m ? m.a : '');
+    setText($('msg-b'), m ? m.b : '');
+    setText($('msg-n'), m && n > 1 ? i + '/' + n : '');
+    const cls = 'lcd-m' + (m ? ' ' + m.c : '');
+    setCls($('msg-a'), cls);
+    setCls($('msg-b'), cls);
+}
+function updateMsg() {
+    const now = performance.now(), list = activeWarnings();
+    if (!list.length) { msgKey = ''; renderMsg(null, 0, 0); return; }
+    const key = list.map((m) => m.a + m.b).join('|');
+    if (key !== msgKey) { msgKey = key; msgIdx = 0; msgSince = now; }
+    else if (list.length > 1 && now - msgSince > MSG_ROTATE_MS) { msgIdx = (msgIdx + 1) % list.length; msgSince = now; }
+    const idx = msgIdx % list.length;
+    renderMsg(list[idx], idx + 1, list.length);
+}
+setInterval(updateMsg, 200);
 
 // ---------- 9. Layar LCD: total mil (bawah) + trip 1 desimal (atas) ----------
 let odoMiles = 0, lastOdoMiles = null, tripMiles = 0, tripManual = false;

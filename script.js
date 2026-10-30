@@ -21,7 +21,7 @@ const MAX_RPM = 8;          // skala tachometer (x1000)
 const REDLINE = 7.0;        // mulai zona merah (x1000)
 const LIMITER = 0.96;       // RPM (0-1) mulai dianggap kena limiter -> jarum geter
 const OIL_MAX_PSI = 150;    // skala penuh gauge oli
-const OIL_NORMAL_PSI = 80;  // tekanan oli saat health 100%
+const OIL_NORMAL_PSI = 150;  // tekanan oli saat health 100%
 
 const NOOP_EL = document.createElement('div');   // pengaman kalau ada elemen yang dihapus dari HTML
 const $ = (id) => document.getElementById(id) || NOOP_EL;

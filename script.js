@@ -7,6 +7,7 @@
      setGear(n)               setHeadlights(0 off | 1 low | 2 high)
      setSeatbelts(bool)       updateLockStatus(state)
      setOdometer(miles)       setEngine(bool)
+     setTrip(miles) / resetTrip()   (opsional; kalau tidak dipanggil, trip dihitung otomatis dari selisih odometer)
    Efek:
      setEngine(true)  -> dial jadi terang + jarum menyapu (kontak ON), tacho menyapu counter-clockwise
      setHeadlights(1|2) -> semua jarum menyala (glow), seperti lampu dashboard asli
@@ -37,7 +38,7 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v));
 
 // ---------- Geometri (viewBox 1774 x 710, mengikuti gambar referensi) ----------
 // a0 = sudut jarum di nilai 0 (derajat layar, 0 = kanan, 90 = bawah). sweep > 0 searah jarum jam, sweep < 0 BERLAWANAN.
-const SPD  = { cx: 572,  cy: 432, bezel: 308, a0: 125, sweep: 250 };    // 0 kiri-bawah -> 220 kanan-bawah (CW)
+const SPD  = { cx: 572,  cy: 432, bezel: 308, a0: 68,  sweep: 223 };    // 0 kanan-bawah -> 220 kanan-atas (CW); sisi kanan dikosongkan untuk layar LCD
 const RPM  = { cx: 1202, cy: 432, bezel: 308, a0: 48,  sweep: -276 };   // 0 kanan-bawah -> naik lewat kanan, atas, kiri -> 8 kiri-bawah (CCW)
 const FUEL = { cx: 130,  cy: 552, bezel: 126, a0: 155, sweep: 170 };    // E kiri-bawah -> F kanan-atas
 const OIL  = { cx: 1642, cy: 552, bezel: 126, a0: 145, sweep: 215 };    // 0 kiri-bawah -> 150 kanan
@@ -114,8 +115,8 @@ const ICON_ENGINE = `<path d="M2 11v5M5 9h3V7h5v2h3l2 2h3v6h-3l-2 2H8l-3-3z"/>`;
 const ICON_FUEL = `<path fill="currentColor" stroke="none" d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77zM12 10H6V5h6v5zm6 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>`;
 const ICON_OIL = `<path fill="currentColor" stroke="none" d="M2.5 10h4.2l1.3-2h2V6.5H8V5h6v1.5h-2V8h2.5l2 1.8 5-2.8 1 1.2-6.6 7.3H8.4L7 13H2.5zM20.2 14.6c0-.9 1.1-2.3 1.1-2.3s1.1 1.4 1.1 2.3c0 .6-.5 1.1-1.1 1.1s-1.1-.5-1.1-1.1z"/>`;
 
-// geometri jendela ODO (di bawah speedo)
-const ODO_N = 6, ODO_W = 28, ODO_ROW = 44, ODO_Y = 582, ODO_X0 = SPD.cx - (ODO_N * ODO_W) / 2;
+// layar LCD (trip + total mil) di sisi kanan hub speedo
+const LCD = { x: SPD.cx + 60, y: SPD.cy - 52, w: 190, h: 112 };
 
 function buildDial() {
     const sA = (v) => SPD.a0 + (v / MAX_MPH) * SPD.sweep;        // sudut speedo (mph)
@@ -143,9 +144,8 @@ function buildDial() {
       <radialGradient id="dropG" cx="0.5" cy="0.5" r="0.5">
         <stop offset="0.94" stop-color="#000" stop-opacity="0.6"/><stop offset="1" stop-color="#000" stop-opacity="0"/>
       </radialGradient>
-      <linearGradient id="drumShade" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#000" stop-opacity="0.65"/><stop offset="0.3" stop-color="#000" stop-opacity="0"/>
-        <stop offset="0.7" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.65"/>
+      <linearGradient id="lcdG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#101328"/><stop offset="0.5" stop-color="#070812"/><stop offset="1" stop-color="#04050b"/>
       </linearGradient>
       <radialGradient id="hubG" cx="0.4" cy="0.35" r="0.75">
         <stop offset="0" stop-color="#3a3b40"/><stop offset="0.6" stop-color="#0c0c0e"/><stop offset="1" stop-color="#030304"/>
@@ -186,7 +186,7 @@ function buildDial() {
         const [x, y] = pol(SPD.cx, SPD.cy, 222, sA(v));
         s += txt('num', x, y, 42, v);
     }
-    s += txt('lbl', SPD.cx, SPD.cy - 198, 26, 'MPH');
+    s += txt('lbl', SPD.cx + 164, SPD.cy + 158, 28, 'MPH');   // di celah kanan-bawah, bebas dari angka & tick
     s += `<path class="arc thin" d="${arcPath(SPD.cx, SPD.cy, 176, kA(0), kA(MAX_KMH))}"/>`;
     for (let k = 0; k <= MAX_KMH; k += 5) {
         const major = k % 30 === 0, mid = k % 10 === 0;
@@ -227,21 +227,17 @@ function buildDial() {
         s += icon(id, cls, RPM.cx + (i - 1.5) * 60 - IW / 2, icoY, IC, inner);
     });
 
-    // ----- ODO (bawah speedo): drum angka berputar; 5 digit hitam-putih + digit terakhir (desimal) putih -----
-    s += `<g class="odo">
-    <rect x="${ODO_X0 - 6}" y="${ODO_Y - 8}" width="${ODO_N * ODO_W + 12}" height="${ODO_ROW + 16}" rx="8" fill="#050506" stroke="#2c2d32" stroke-width="2"/>`;
-    for (let i = 0; i < ODO_N; i++) {
-        const x = ODO_X0 + i * ODO_W, last = i === ODO_N - 1;
-        let rows = '';
-        for (let r = 0; r <= 10; r++) rows += `<text class="odo-digit${last ? ' odo-last' : ''}" x="${ODO_W / 2}" y="${ODO_ROW / 2 + r * ODO_ROW + 2}">${r % 10}</text>`;
-        s += `<svg x="${x}" y="${ODO_Y}" width="${ODO_W}" height="${ODO_ROW}" viewBox="0 0 ${ODO_W} ${ODO_ROW}" overflow="hidden">
-          <rect width="${ODO_W}" height="${ODO_ROW}" fill="${last ? '#f2f2f2' : '#050506'}"/>
-          <g class="odo-strip snap" id="odo${i}">${rows}</g>
-          <rect width="${ODO_W}" height="${ODO_ROW}" fill="url(#drumShade)"/>
-          ${i > 0 && !last ? `<line x1="0" y1="0" x2="0" y2="${ODO_ROW}" stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>` : ''}
-        </svg>`;
-    }
-    s += `</g>` + txt('lbl', ODO_X0 + ODO_N * ODO_W + 50, ODO_Y + ODO_ROW / 2, 20, 'MILES');
+    // ----- LCD (kanan hub speedo): baris atas = TRIP, baris bawah = total MILE -----
+    s += `<g class="lcd">
+    <rect x="${LCD.x}" y="${LCD.y}" width="${LCD.w}" height="${LCD.h}" rx="8" fill="#2b2d33"/>
+    <rect x="${LCD.x + 3}" y="${LCD.y + 3}" width="${LCD.w - 6}" height="${LCD.h - 6}" rx="6" fill="url(#lcdG)"/>
+    <line x1="${LCD.x + 8}" y1="${LCD.y + 4.5}" x2="${LCD.x + LCD.w - 8}" y2="${LCD.y + 4.5}" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+    <path d="M${LCD.x + 3} ${LCD.y + 3}H${LCD.x + LCD.w * 0.55}L${LCD.x + LCD.w * 0.3} ${LCD.y + LCD.h - 3}H${LCD.x + 3}Z" fill="rgba(255,255,255,0.035)"/>
+    ${txt('lcd-s', LCD.x + 14, LCD.y + 38, 15, 'TI')}
+    <text id="lcd-trip" class="lcd-v" x="${LCD.x + 42}" y="${LCD.y + 31}" font-size="40">0.0</text>
+    <text id="lcd-odo" class="lcd-v" x="${LCD.x + 14}" y="${LCD.y + 82}" font-size="40">0</text>
+    ${txt('lcd-s end', LCD.x + LCD.w - 12, LCD.y + 89, 15, 'MILE')}
+    </g>`;
 
     // ----- jarum + cap krom (paling atas) -----
     s += needle('nd-fuel', FUEL, 88, 18, 16, 2.4) + needle('nd-oil', OIL, 88, 18, 16, 2.4);
@@ -384,37 +380,28 @@ window.setSeatbelts = function (val) {
     setCls($('seatbelts'), on ? 'ind eng active' : 'ind eng warn');
 };
 
-// ---------- 9. Odometer (mil) -> 5 digit + 1 digit desimal, drum berputar ----------
-let lastOdo = '';
-const odoCells = [];
-for (let i = 0; i < ODO_N; i++) {
-    const el = $('odo' + i), c = { el, row: 0 };
-    el.addEventListener('transitionend', () => {          // 9 -> 0: setelah putar ke "0" cadangan, lompat balik ke baris 0 tanpa animasi
-        if (c.row === 10) odoMove(c, 0, false);
-    });
-    odoCells.push(c);
-}
-function odoMove(c, row, animate) {
-    c.row = row;
-    if (!animate) c.el.classList.add('snap');
-    c.el.style.transform = `translateY(${-row * ODO_ROW}px)`;
-    if (!animate) { void c.el.getBoundingClientRect(); c.el.classList.remove('snap'); }
+// ---------- 9. Layar LCD: total mil (bawah) + trip 1 desimal (atas) ----------
+let odoMiles = 0, lastOdoMiles = null, tripMiles = 0, tripManual = false;
+function renderLcd() {
+    setText($('lcd-odo'), Math.floor(odoMiles));
+    setText($('lcd-trip'), tripMiles.toFixed(1));
 }
 window.setOdometer = function (distance) {
-    const n = Math.max(0, Math.min(999999, Math.floor(Number(distance || 0) * 10)));
-    const s = String(n).padStart(ODO_N, '0');
-    if (s === lastOdo) return;
-    const animate = lastOdo !== '' && state.engine;      // pertama kali / mesin mati: langsung set tanpa animasi
-    lastOdo = s;
-    for (let i = 0; i < ODO_N; i++) {
-        const c = odoCells[i], d = +s[i];
-        if (c.row === 10) odoMove(c, 0, false);
-        if (c.row === d) continue;
-        if (!animate) odoMove(c, d, false);
-        else if (d < c.row && c.row - d > 5) odoMove(c, 10, true);   // lewat 9 -> 0: putar maju terus
-        else odoMove(c, d, true);
+    const m = Math.max(0, Math.min(999999.9, Number(distance || 0)));
+    if (!tripManual && lastOdoMiles !== null) {           // trip otomatis: akumulasi selisih odometer
+        const delta = m - lastOdoMiles;
+        if (delta > 0 && delta < 5) tripMiles = Math.min(9999.9, tripMiles + delta);
     }
+    lastOdoMiles = m;
+    odoMiles = m;
+    renderLcd();
 };
+window.setTrip = function (distance) {                    // opsional: isi trip manual dari server
+    tripManual = true;
+    tripMiles = Math.max(0, Math.min(9999.9, Number(distance || 0)));
+    renderLcd();
+};
+window.resetTrip = function () { tripMiles = 0; renderLcd(); };
 
 // ---------- 10. MESIN: nyala = dial terang + jarum menyapu ----------
 window.setEngine = function (on) {
@@ -527,6 +514,8 @@ window.addEventListener('message', function (event) {
             case 'setLights': window.setHeadlights(Number(d.state !== undefined ? d.state : d.lights) || 0); break;
             case 'setSeatbelts': window.setSeatbelts(!!d.state); break;
             case 'setOdometer': window.setOdometer(Number(d.distance) || 0); break;
+            case 'setTrip': window.setTrip(Number(d.distance !== undefined ? d.distance : d.trip) || 0); break;
+            case 'resetTrip': window.resetTrip(); break;
             case 'toggleVbox': window.toggleVbox(); break;
             case 'setVbox': window.setVbox(d.state !== undefined ? !!d.state : true); break;
             case 'resetVbox': window.resetVbox(); break;
@@ -674,7 +663,7 @@ if (isPreview) {
     });
 
     const GEAR_TOP = [0, 28, 50, 76, 106, 140, 190];
-    let mps = 0, gear = 1, throttle = true, odo = 12345.3, health = 1000, fuel = 86;
+    let mps = 0, gear = 1, throttle = true, odo = 39139.2, health = 1000, fuel = 86;
     setInterval(() => {
         btnE.textContent = 'Mesin: ' + (state.engine ? 'ON' : 'OFF');
         btnE.classList.toggle('on', state.engine);

@@ -146,13 +146,19 @@ body.preview .hud-wrap {
 .dial .gear.rev { fill: var(--warn); }
 .cluster:not(.engine-on) .dial .gear { opacity: 0.3; }
 
-/* ODO: jendela hitam, digit putih; digit desimal putih dengan angka gelap; ikut gelap saat mesin mati */
-.dial .odo { transition: opacity 0.7s ease; }
-.cluster:not(.engine-on) .dial .odo { opacity: 0.35; }
-.dial .odo-digit { font-family: var(--ui); font-weight: 700; font-style: normal; font-size: 34px; fill: #f2f2f2; text-anchor: middle; dominant-baseline: central; }
-.dial .odo-digit.odo-last { fill: #0b0b0d; }
-.dial .odo-strip { transition: transform 0.45s cubic-bezier(0.45, 0, 0.2, 1); }
-.dial .odo-strip.snap { transition: none; }
+/* LCD trip + odometer: layar biru-hitam, teks putih; meredup saat mesin mati */
+.dial .lcd { transition: opacity 0.7s ease; }
+.cluster:not(.engine-on) .dial .lcd { opacity: 0.25; }
+.dial .lcd-v {
+    font-family: var(--ui); font-weight: 700; fill: #f4f7ff;
+    text-anchor: start; dominant-baseline: central;
+    font-variant-numeric: tabular-nums; letter-spacing: 1px;
+}
+.dial .lcd-s {
+    font-family: var(--ui); font-weight: 700; fill: #dfe6f5;
+    text-anchor: start; dominant-baseline: central; letter-spacing: 1px;
+}
+.dial .lcd-s.end { text-anchor: end; }
 
 /* ===================== PANEL TES (preview) ===================== */
 .dev { display: none; position: fixed; top: 8px; left: 8px; z-index: 10; gap: 6px; }

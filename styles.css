@@ -59,28 +59,6 @@ body.preview .hud-wrap {
     transform-origin: center;
 }
 
-/* ===================== PANEL LOGAM (brushed gunmetal) ===================== */
-/* Posisi/ukuran mengikuti viewBox SVG: x 4..1770, y 100..790 */
-.panel {
-    position: absolute;
-    z-index: 0;
-    left: 0.2255%;
-    top: 1.41%;
-    width: 99.55%;
-    height: 97.18%;
-    border-radius: 7.93% / 20.29%;
-    border: 2px solid rgba(255, 255, 255, 0.14);
-    background:
-        linear-gradient(105deg, transparent 18%, rgba(255, 255, 255, 0.10) 34%, transparent 50%, rgba(255, 255, 255, 0.07) 68%, transparent 84%),
-        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, rgba(0, 0, 0, 0.12) 1px 2px, transparent 2px 4px),
-        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 7px),
-        radial-gradient(120% 95% at 50% -12%, #70737b 0%, #43454b 34%, #1e1f23 72%, #0c0c0e 100%);
-    box-shadow:
-        inset 0 3px 9px rgba(255, 255, 255, 0.20),
-        inset 0 -14px 28px rgba(0, 0, 0, 0.75),
-        0 10px 30px rgba(0, 0, 0, 0.6);
-}
-
 /* ===================== TEKS DIAL ===================== */
 .dial .tk { stroke: var(--ink); stroke-linecap: butt; }
 .dial .tk.dim { opacity: 0.8; }
@@ -142,14 +120,15 @@ body.preview .hud-wrap {
 #door-lock.locked .shackle-closed { display: inline; }
 #door-lock.locked .shackle-open { display: none; }
 
-.dial .gear { font-family: var(--digital); font-weight: 800; fill: #f4f7ff; text-anchor: middle; dominant-baseline: central; }
-.dial .gear.rev { fill: #ff4d4d; }
+.dial .gear { font-family: var(--digital); font-weight: 800; font-size: 58px; fill: #f4f7ff; text-anchor: middle; dominant-baseline: central; }
+.dial .gear.rev { fill: var(--warn); }
 
-/* Semua layar LCD (speedo + tachometer): gelap total saat mesin mati, isi menyala saat mesin hidup */
-.dial .lcd { transition: opacity 0.7s ease; }
-.cluster:not(.engine-on) .dial .lcd { opacity: 0.55; }
-.dial .lcd-ui { transition: opacity 0.7s ease; }
-.cluster:not(.engine-on) .dial .lcd-ui { opacity: 0; }
+/* LCD trip + odometer: layar biru-hitam, teks putih; meredup saat mesin mati */
+/* mesin mati = layar gelap total (teks hilang, kaca digelapkan); mesin hidup = menyala */
+.dial .lcd-txt { opacity: 0; transition: opacity 0.6s ease; }
+.cluster.engine-on .dial .lcd-txt { opacity: 1; }
+.dial .lcd-shade { fill: #000; opacity: 0.7; transition: opacity 0.7s ease; }
+.cluster.engine-on .dial .lcd-shade { opacity: 0; }
 .dial .lcd-v {
     font-family: var(--ui); font-weight: 700; fill: #f4f7ff;
     text-anchor: start; dominant-baseline: central;
@@ -160,7 +139,6 @@ body.preview .hud-wrap {
     text-anchor: start; dominant-baseline: central; letter-spacing: 1px;
 }
 .dial .lcd-s.end { text-anchor: end; }
-.dial .lcd-s.mid { text-anchor: middle; }
 
 /* Layar pesan peringatan di tachometer */
 .dial .lcd-m {

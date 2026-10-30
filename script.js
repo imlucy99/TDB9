@@ -39,7 +39,7 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v));
 // ---------- Geometri (viewBox 1774 x 710, mengikuti gambar referensi) ----------
 // a0 = sudut jarum di nilai 0 (derajat layar, 0 = kanan, 90 = bawah). sweep > 0 searah jarum jam, sweep < 0 BERLAWANAN.
 const SPD  = { cx: 572,  cy: 432, bezel: 308, a0: 68,  sweep: 223 };    // 0 kanan-bawah -> 220 kanan-atas (CW); sisi kanan dikosongkan untuk layar LCD
-const RPM  = { cx: 1202, cy: 432, bezel: 308, a0: 48,  sweep: -276 };   // 0 kanan-bawah -> naik lewat kanan, atas, kiri -> 8 kiri-bawah (CCW)
+const RPM  = { cx: 1202, cy: 432, bezel: 308, a0: 112, sweep: -223 };   // cermin speedo (seperti DB9): 0 kiri-bawah -> naik lewat bawah, kanan, atas -> 8 kiri-atas (CCW); sisi kiri kosong untuk layar
 const FUEL = { cx: 130,  cy: 552, bezel: 126, a0: 155, sweep: 170 };    // E kiri-bawah -> F kanan-atas
 const OIL  = { cx: 1642, cy: 552, bezel: 126, a0: 145, sweep: 215 };    // 0 kiri-bawah -> 150 kanan
 const rimOf = (g) => Math.round(g.bezel * 0.07);
@@ -118,11 +118,12 @@ const ICON_OIL = `<path fill="currentColor" stroke="none" d="M2.5 10h4.2l1.3-2h2
 // layar LCD (trip + total mil) di sisi kanan hub speedo
 const LCD = { x: SPD.cx + 60, y: SPD.cy - 52, w: 190, h: 112 };
 // layar pesan peringatan di tachometer (di bawah hub)
-const MSG = { x: RPM.cx - 100, y: RPM.cy + 56, w: 200, h: 82 };
+const MSG = { x: RPM.cx - 260, y: RPM.cy - 52, w: 200, h: 112 };   // cermin layar speedo, di kiri hub
 // bingkai layar LCD (dipakai kedua layar)
 const lcdFrame = (r) => `
     <rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="8" fill="#2b2d33"/>
     <rect x="${r.x + 3}" y="${r.y + 3}" width="${r.w - 6}" height="${r.h - 6}" rx="6" fill="url(#lcdG)"/>
+    <rect class="lcd-shade" x="${r.x + 3}" y="${r.y + 3}" width="${r.w - 6}" height="${r.h - 6}" rx="6"/>
     <line x1="${r.x + 8}" y1="${r.y + 4.5}" x2="${r.x + r.w - 8}" y2="${r.y + 4.5}" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
     <path d="M${r.x + 3} ${r.y + 3}H${r.x + r.w * 0.55}L${r.x + r.w * 0.3} ${r.y + r.h - 3}H${r.x + 3}Z" fill="rgba(255,255,255,0.035)"/>`;
 
@@ -218,7 +219,7 @@ function buildDial() {
     }
     s += `<circle cx="${RPM.cx}" cy="${RPM.cy}" r="150" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="2"/>`;
     s += `<circle cx="${RPM.cx}" cy="${RPM.cy}" r="168" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2"/>`;
-    s += txt('lbl', RPM.cx, RPM.cy - 120, 32, 'RPM') + txt('lbl', RPM.cx, RPM.cy - 92, 20, 'X1000');
+    s += txt('lbl', RPM.cx - 164, RPM.cy + 150, 28, 'RPM') + txt('lbl', RPM.cx - 164, RPM.cy + 178, 18, 'X1000');   // cermin label MPH
 
     // ----- bayangan "mesin mati" (di atas muka, di bawah jarum) -----
     s += shade(FUEL) + shade(OIL) + shade(SPD) + shade(RPM);
@@ -228,26 +229,31 @@ function buildDial() {
     s += icon('oil-ico', 'gauge-ico', OIL.cx - 14.4, OIL.cy + 28, 1.2, ICON_OIL);
 
     // ----- gear + ikon status: di celah bawah tachometer (jarum tidak pernah lewat sini) -----
+    // layar kiri hub: sel gear (kiri) + pembatas + area pesan (kanan)
+    const MX = MSG.x + 78 + (MSG.w - 78) / 2;
     s += `<g class="lcd">${lcdFrame(MSG)}
-    <text id="msg-a" class="lcd-m" x="${MSG.x + MSG.w / 2}" y="${MSG.y + 27}" font-size="30"></text>
-    <text id="msg-b" class="lcd-m" x="${MSG.x + MSG.w / 2}" y="${MSG.y + 58}" font-size="30"></text>
-    ${txt('lcd-s end', MSG.x + MSG.w - 12, MSG.y + 14, 13, '').replace('></text>', ' id="msg-n"></text>')}
-    </g>`;
-    s += `<text id="gear" class="gear" x="${RPM.cx}" y="${RPM.cy + 176}">N</text>`;
-    const IC = 1.6, IW = 24 * IC, icoY = RPM.cy + 214;
+    <g class="lcd-txt">
+    <line x1="${MSG.x + 78}" y1="${MSG.y + 16}" x2="${MSG.x + 78}" y2="${MSG.y + MSG.h - 16}" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+    <text id="gear" class="gear" x="${MSG.x + 40}" y="${MSG.y + MSG.h / 2 + 2}">N</text>
+    <text id="msg-a" class="lcd-m" x="${MX}" y="${MSG.y + 42}" font-size="25"></text>
+    <text id="msg-b" class="lcd-m" x="${MX}" y="${MSG.y + 72}" font-size="25"></text>
+    ${txt('lcd-s end', MSG.x + MSG.w - 12, MSG.y + 15, 13, '').replace('></text>', ' id="msg-n"></text>')}
+    </g></g>`;
+    const IC = 1.4, IW = 24 * IC, icoY = RPM.cy + 70;   // baris ikon tepat di bawah layar
     [['engine-ico', 'eng', ICON_ENGINE], ['headlight', 'eng', ICON_HEADLIGHT],
      ['seatbelts', 'eng warn', ICON_SEATBELT], ['door-lock', '', ICON_LOCK]].forEach(([id, cls, inner], i) => {
-        s += icon(id, cls, RPM.cx + (i - 1.5) * 56 - IW / 2, icoY, IC, inner);
+        s += icon(id, cls, MSG.x + MSG.w / 2 + (i - 1.5) * 48 - IW / 2, icoY, IC, inner);
     });
 
     // ----- LCD (kanan hub speedo): baris atas = TRIP, baris bawah = total MILE -----
     s += `<g class="lcd">
     ${lcdFrame(LCD)}
+    <g class="lcd-txt">
     ${txt('lcd-s', LCD.x + 14, LCD.y + 38, 15, 'TI')}
     <text id="lcd-trip" class="lcd-v" x="${LCD.x + 42}" y="${LCD.y + 31}" font-size="40">0.0</text>
     <text id="lcd-odo" class="lcd-v" x="${LCD.x + 14}" y="${LCD.y + 82}" font-size="40">0</text>
     ${txt('lcd-s end', LCD.x + LCD.w - 12, LCD.y + 89, 15, 'MILE')}
-    </g>`;
+    </g></g>`;
 
     // ----- jarum + cap krom (paling atas) -----
     s += needle('nd-fuel', FUEL, 88, 18, 16, 2.4) + needle('nd-oil', OIL, 88, 18, 16, 2.4);

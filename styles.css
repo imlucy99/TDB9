@@ -142,13 +142,15 @@ body.preview .hud-wrap {
 #door-lock.locked .shackle-closed { display: inline; }
 #door-lock.locked .shackle-open { display: none; }
 
-.dial .gear { font-family: var(--digital); font-weight: 800; font-size: 46px; fill: var(--ink); text-anchor: middle; dominant-baseline: central; transition: opacity 0.5s ease; }
+.dial .gear { font-family: var(--digital); font-weight: 800; font-size: 58px; fill: #f4f7ff; text-anchor: middle; dominant-baseline: central; }
 .dial .gear.rev { fill: var(--warn); }
-.cluster:not(.engine-on) .dial .gear { opacity: 0.3; }
 
 /* LCD trip + odometer: layar biru-hitam, teks putih; meredup saat mesin mati */
-.dial .lcd { transition: opacity 0.7s ease; }
-.cluster:not(.engine-on) .dial .lcd { opacity: 0.25; }
+/* mesin mati = layar gelap total (teks hilang, kaca digelapkan); mesin hidup = menyala */
+.dial .lcd-txt { opacity: 0; transition: opacity 0.6s ease; }
+.cluster.engine-on .dial .lcd-txt { opacity: 1; }
+.dial .lcd-shade { fill: #000; opacity: 0.7; transition: opacity 0.7s ease; }
+.cluster.engine-on .dial .lcd-shade { opacity: 0; }
 .dial .lcd-v {
     font-family: var(--ui); font-weight: 700; fill: #f4f7ff;
     text-anchor: start; dominant-baseline: central;
@@ -163,7 +165,7 @@ body.preview .hud-wrap {
 /* Layar pesan peringatan di tachometer */
 .dial .lcd-m {
     font-family: var(--ui); font-weight: 700; fill: #f4f7ff;
-    text-anchor: middle; dominant-baseline: central; letter-spacing: 2px;
+    text-anchor: middle; dominant-baseline: central; letter-spacing: 1px;
 }
 .dial .lcd-m.warn { fill: #ffb21a; }
 .dial .lcd-m.crit { fill: #ff4d4d; animation: lcdblink 1s step-end infinite; }
